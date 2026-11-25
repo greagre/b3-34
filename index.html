@@ -18,6 +18,18 @@
 }
 .lcd-sub .dec[hidden] { display: none; }
 .lcd-sub > span[hidden] { display: none; }
+
+/* Коды команд (они же цифры на индикаторе): тёмнее и жирнее,
+   размер поднят так, чтобы моноширинный код читался вровень
+   с названием команды рядом. Названия при этом остаются как были. */
+.lcd-sub .dec span {
+  color: #0b6b2e !important;
+  font-weight: 700 !important;
+  font-size: 1.15em;
+  line-height: 1;
+}
+body[data-theme="light"] .lcd-sub .dec span { color: #0a5c28 !important; }
+body[data-theme="dark"]  .lcd-sub .dec span { color: #5ddc8a !important; }
 </style>
 </head>
 <body data-theme="classic" data-mode="study" data-tab="num">
