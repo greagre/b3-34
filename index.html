@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d7d3c4">
+<title>ЭЛЕКТРОНИКА Б3-34 — эмулятор</title>
+<link rel="stylesheet" href="layout.css">
+</head>
+<body data-theme="classic" data-mode="study" data-tab="num">
+<div class="app">
+  <div class="top">
+    <label for="model">Модель</label>
+    <select id="model" aria-label="Модель калькулятора"></select>
+    <button type="button" class="topbtn" id="themeBtn" title="Тема">▤</button>
+    <button type="button" class="topbtn" id="shelfOpen" title="Библиотека программ">☰</button>
+    <button type="button" class="topbtn" id="convBtn" title="Импорт файлов каталога programs/*.json">Файл</button>
+    <a class="topbtn" href="algo.html" title="МК-Алго — написать программу текстом">Алго</a>
+    <a class="topbtn" href="b3-decode.html" title="Декодер: код Б3-34 → текст с пояснениями">Дек</a>
+  </div>
+
+  <div class="calc">
+    <div class="brand"><span>ЭЛЕКТРОНИКА</span><span id="modelName">Б3-34</span></div>
+
+    <div class="screen">
+      <div class="lcd" id="lcd">0</div>
+      <div class="lcd-sub">
+        <span>режим: <b id="stMode">АВТ</b></span>
+        <span>слой: <b id="stLayer">—</b></span>
+        <span>угол: <b id="stAngle">Г</b></span>
+        <span>адрес: <b id="stStep">00</b></span>
+      </div>
+    </div>
+
+    <div class="angseg" id="angseg" role="group" aria-label="Единица измерения угла, как переключатель Р-ГРД-Г">
+      <span class="anglab">угол</span>
+      <button type="button" data-angle="deg" title="Градусы — полный оборот 360">Г</button>
+      <button type="button" data-angle="grad" title="Грады — полный оборот 400">ГРД</button>
+      <button type="button" data-angle="rad" title="Радианы — полный оборот 2π">Р</button>
+    </div>
+
+    <button type="button" class="progtag" id="progTag" hidden>
+      <span class="ptag-num" id="progTagNum">01</span>
+      <span class="ptag-name" id="progTagName">n! — факториал</span>
+      <span class="ptag-go">☰</span>
+    </button>
+
+    <div class="keys" id="keys"></div>
+
+    <div class="service" id="service"></div>
+
+    <div class="tempo study-only" id="tempoRow">
+      <span>Темп</span>
+      <select id="tempo" aria-label="Темп автоматического шага">
+        <option value="1">1 с</option>
+        <option value="2" selected>2 с</option>
+        <option value="5">5 с</option>
+        <option value="10">10 с</option>
+        <option value="0">вручную</option>
+      </select>
+    </div>
+
+    <div class="status study-only" id="status"></div>
+
+    <div class="tabs study-only" id="tabs">
+      <button type="button" data-tab="num">Числа</button>
+      <button type="button" data-tab="regs">Регистры</button>
+      <button type="button" data-tab="code">Код</button>
+      <button type="button" data-tab="log">Журнал</button>
+    </div>
+
+    <div class="tabpane study-only" id="tabNum">
+      <div class="stack" id="stack"></div>
+    </div>
+
+    <div class="tabpane regs study-only" id="tabRegs"></div>
+
+    <div class="tabpane study-only" id="tabCode">
+      <div class="prog" id="prog"></div>
+    </div>
+
+    <div class="tabpane study-only" id="tabLog">
+      <div class="logbox">
+        <div class="loghead">
+          <span>Журнал шагов · <b id="logCount">0</b></span>
+          <button type="button" id="logClear">Очистить</button>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">Готово. Клавиша f открывает второй слой, k — слой косвенных команд.</div>
+  </div>
+
+  <div class="modeseg" id="modeseg">
+    <button type="button" data-mode="work">Работа</button>
+    <button type="button" data-mode="study">Учёба</button>
+  </div>
+
+  <div class="foot">
+    <a href="algo.html">МК-Алго — язык программ</a> ·
+    <a href="b3-decode.html">Декодер кода → текст</a>
+  </div>
+</div>
+
+<div class="shelf" id="shelf" hidden>
+  <div class="shelf-card">
+    <div class="shelf-head">
+      <span>Программы</span>
+      <button type="button" id="shelfClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="shelf-tools">
+      <button type="button" id="shelfSave">＋ Сохранить текущую</button>
+      <button type="button" id="shelfExport">⇩ В файл</button>
+      <button type="button" id="shelfImport">⇧ Из файла</button>
+      <input type="file" id="shelfFile" accept=".json,application/json" hidden>
+    </div>
+    <div class="shelf-list" id="shelfList"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'mk-emulator/theme';
+  var ORDER = ['classic', 'light', 'dark'];
+  var ICON = { classic: '▤', light: '☀', dark: '☾' };
+  var NAME = { classic: 'классика — бежевый корпус', light: 'светлая', dark: 'тёмная' };
+  var META = { classic: '#d7d3c4', light: '#eef1f6', dark: '#15181b' };
+  var btn = document.getElementById('themeBtn');
+  var meta = document.querySelector('meta[name="theme-color"]');
+
+  function apply(theme) {
+    if (ORDER.indexOf(theme) < 0) theme = 'classic';
+    document.body.dataset.theme = theme;
+    btn.textContent = ICON[theme];
+    btn.title = 'Тема: ' + NAME[theme] + ' — нажми, чтобы сменить';
+    if (meta) meta.setAttribute('content', META[theme]);
+    try { localStorage.setItem(KEY, theme); } catch (e) {}
+  }
+
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved && ORDER.indexOf(saved) >= 0 ? saved : 'classic');
+
+  btn.addEventListener('click', function () {
+    var cur = document.body.dataset.theme || 'classic';
+    var i = ORDER.indexOf(cur);
+    apply(ORDER[(i + 1) % ORDER.length]);
+  });
+})();
+</script>
+
+<script src="core.js"></script>
+<script src="profiles.js"></script>
+<script src="ui.js"></script>
+<script src="shelf.js"></script>
+<script src="convert.js"></script>
+
+<script>
+/* Переключатель угла Р-ГРД-Г.
+   Живёт отдельно от ui.js: ui.js про угол ничего не знает,
+   ядро отдаёт setAngle/getAngle, здесь только кнопки и память. */
+(function () {
+  var KEY = 'mk-emulator/angle';
+  var MARK = { deg: 'Г', grad: 'ГРД', rad: 'Р' };
+  var WORD = { deg: 'градусы', grad: 'грады', rad: 'радианы' };
+  var seg = document.getElementById('angseg');
+  var mark = document.getElementById('stAngle');
+  var cur = 'deg';
+  if (!seg) return;
+
+  function core() {
+    return (window.MKUI && window.MKUI.getCore) ? window.MKUI.getCore() : null;
+  }
+
+  function paint() {
+    Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', b.dataset.angle === cur);
+    });
+    if (mark) mark.textContent = MARK[cur];
+    seg.title = 'Угол: ' + WORD[cur];
+  }
+
+  function apply(mode, silent) {
+    if (!MARK[mode]) mode = 'deg';
+    cur = mode;
+    try { localStorage.setItem(KEY, mode); } catch (e) {}
+    var c = core();
+    if (c && c.setAngle) c.setAngle(mode);
+    paint();
+    if (!silent && window.MKUI && window.MKUI.hint) {
+      window.MKUI.hint('Угол: ' + WORD[mode] + ' — sin, cos, tg и обратные считаются в этих единицах');
+    }
+  }
+
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved && MARK[saved] ? saved : 'deg', true);
+
+  seg.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-angle]');
+    if (b) apply(b.dataset.angle);
+  });
+
+  /* при смене модели ui.js создаёт новое ядро — возвращаем ему угол */
+  var model = document.getElementById('model');
+  if (model) {
+    model.addEventListener('change', function () {
+      setTimeout(function () { apply(cur, true); }, 0);
+    });
+  }
+})();
+</script>
+</body>
+</html>
