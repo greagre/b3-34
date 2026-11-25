@@ -18,6 +18,9 @@
    В той же строке под дисплеем (режим · слой · угол · адрес)
    в ПРГ вместо дублирующего адреса выводится расшифровка этих
    трёх кодов словами — то, что в «Учёбе» видно в листинге.
+   Коды там бледные (они дублируют индикатор), названия команд
+   яркие, а в конце строки стоит счётчик команд — адрес, куда
+   пойдёт следующая запись.
 
    Наружу отдаёт мост window.MKUI — им пользуется shelf.js
    (библиотека программ): загрузка, прогон для проверки, подсказка.
@@ -282,8 +285,17 @@
 
   /* Расшифровка тех же трёх кодов словами — в строке под дисплеем.
      Порядок как на индикаторе: свежий код слева.
-     Адрес здесь не повторяем: он и так стоит правой группой
-     индикатора, а его место в строке отдано названиям команд. */
+     Сами коды бледные — они лишь дублируют индикатор, — а названия
+     команд и слово «счётчик» яркие: этого на индикаторе нет.
+     В конце строки — счётчик команд: адрес следующей записи. */
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function dim(s) {
+    return '<span style="opacity:.45">' + esc(s) + '</span>';
+  }
+
   function prgDecode(st) {
     var MK = window.MKCore;
     var parts = [];
@@ -293,9 +305,10 @@
       var code = st.prog[addr] & 255;
       if (code === MK.NOP) continue;
       var info = rowText(code, addr);
-      parts.push(MK.codeStr(code) + ' ' + info.label);
+      parts.push(dim(MK.codeStr(code)) + ' <b>' + esc(info.label) + '</b>');
     }
-    if (!parts.length) return 'память пуста — набери первую команду';
+    if (!parts.length) parts.push('память пуста');
+    parts.push('<b>счётчик</b> ' + dim(pad2(st.ip)));
     return parts.join(' · ');
   }
 
@@ -321,7 +334,8 @@
     if (el.addr) el.addr.hidden = prg;
     if (el.decode) {
       el.decode.hidden = !prg;
-      el.decode.textContent = prg ? prgDecode(st) : '';
+      /* innerHTML: prgDecode отдаёт разметку — коды бледные, названия яркие */
+      el.decode.innerHTML = prg ? prgDecode(st) : '';
     }
 
     renderPanes();
