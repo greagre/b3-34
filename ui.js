@@ -12,6 +12,9 @@
    Название загруженной программы (номер + имя) показывается
    в двух местах: чипом под дисплеем и на кнопке библиотеки.
 
+   Индикатор в режиме ПРГ работает как на настоящем Б3-34:
+   показывает три последних записанных кода и адрес счётчика.
+
    Наружу отдаёт мост window.MKUI — им пользуется shelf.js
    (библиотека программ): загрузка, прогон для проверки, подсказка.
    ========================================================= */
@@ -247,8 +250,28 @@
   /* ---------- отрисовка ---------- */
   function lcdText() {
     var st = core.ST;
+    if (st.mode === 'PRG') return prgLcd(st);
     if (st.err) return 'ЕГГОГ';
     return core.fmt(st.X);
+  }
+
+  /* Индикатор в режиме ПРГ — как на настоящем Б3-34:
+     слева три последних записанных кода (свежий — крайний слева),
+     справа адрес счётчика команд — куда пойдёт следующая команда.
+     Пример из руководства: 02 01 0E 06, где 06 — адрес счётчика,
+     а 02, 01, 0E — команды по адресам 05, 04, 03.
+     Пока программа пуста, виден только адрес: 00. */
+  function prgLcd(st) {
+    var MK = window.MKCore;
+    var parts = [];
+    for (var k = 1; k <= 3; k++) {
+      var addr = st.ip - k;
+      if (addr < 0) break;
+      var code = st.prog[addr] & 255;
+      parts.push(code === MK.NOP ? '--' : MK.codeStr(code));
+    }
+    parts.push(pad2(st.ip));
+    return parts.join(' ');
   }
 
   function pad2(n) {
@@ -261,7 +284,8 @@
     var st = core.ST;
 
     el.lcd.textContent = lcdText();
-    el.lcd.classList.toggle('err', !!st.err);
+    el.lcd.classList.toggle('prg', st.mode === 'PRG');
+    el.lcd.classList.toggle('err', !!st.err && st.mode !== 'PRG');
     el.mode.textContent = st.mode === 'PRG' ? 'ПРГ' : 'АВТ';
     el.layer.textContent = st.layer === 'f' ? 'F' : (st.layer === 'k' ? 'K' : '—');
     el.step.textContent = pad2(st.ip);
@@ -277,7 +301,7 @@
   function renderStack() {
     var st = core.ST;
     var rows = [
-      ['X', lcdText()],
+      ['X', st.err ? 'ЕГГОГ' : core.fmt(st.X)],
       ['Y', core.fmt(st.Y)],
       ['Z', core.fmt(st.Z)],
       ['T', core.fmt(st.T)],
