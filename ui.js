@@ -15,6 +15,10 @@
    Индикатор в режиме ПРГ работает как на настоящем Б3-34:
    показывает три последних записанных кода и адрес счётчика.
 
+   В той же строке под дисплеем (режим · слой · угол · адрес)
+   в ПРГ вместо дублирующего адреса выводится расшифровка этих
+   трёх кодов словами — то, что в «Учёбе» видно в листинге.
+
    Наружу отдаёт мост window.MKUI — им пользуется shelf.js
    (библиотека программ): загрузка, прогон для проверки, подсказка.
    ========================================================= */
@@ -52,6 +56,8 @@
     mode: document.getElementById('stMode'),
     layer: document.getElementById('stLayer'),
     step: document.getElementById('stStep'),
+    addr: document.getElementById('stAddr'),
+    decode: document.getElementById('stDecode'),
     stack: document.getElementById('stack'),
     regs: document.getElementById('tabRegs'),
     keys: document.getElementById('keys'),
@@ -274,6 +280,25 @@
     return parts.join(' ');
   }
 
+  /* Расшифровка тех же трёх кодов словами — в строке под дисплеем.
+     Порядок как на индикаторе: свежий код слева.
+     Адрес здесь не повторяем: он и так стоит правой группой
+     индикатора, а его место в строке отдано названиям команд. */
+  function prgDecode(st) {
+    var MK = window.MKCore;
+    var parts = [];
+    for (var k = 1; k <= 3; k++) {
+      var addr = st.ip - k;
+      if (addr < 0) break;
+      var code = st.prog[addr] & 255;
+      if (code === MK.NOP) continue;
+      var info = rowText(code, addr);
+      parts.push(MK.codeStr(code) + ' ' + info.label);
+    }
+    if (!parts.length) return 'память пуста — набери первую команду';
+    return parts.join(' · ');
+  }
+
   function pad2(n) {
     var s = String(n | 0);
     return s.length < 2 ? '0' + s : s;
@@ -282,13 +307,22 @@
   function render() {
     if (!core) return;
     var st = core.ST;
+    var prg = st.mode === 'PRG';
 
     el.lcd.textContent = lcdText();
-    el.lcd.classList.toggle('prg', st.mode === 'PRG');
-    el.lcd.classList.toggle('err', !!st.err && st.mode !== 'PRG');
-    el.mode.textContent = st.mode === 'PRG' ? 'ПРГ' : 'АВТ';
+    el.lcd.classList.toggle('prg', prg);
+    el.lcd.classList.toggle('err', !!st.err && !prg);
+    el.mode.textContent = prg ? 'ПРГ' : 'АВТ';
     el.layer.textContent = st.layer === 'f' ? 'F' : (st.layer === 'k' ? 'K' : '—');
     el.step.textContent = pad2(st.ip);
+
+    /* в ПРГ адрес в подписи не нужен — он есть на индикаторе,
+       его место занимает расшифровка кодов */
+    if (el.addr) el.addr.hidden = prg;
+    if (el.decode) {
+      el.decode.hidden = !prg;
+      el.decode.textContent = prg ? prgDecode(st) : '';
+    }
 
     renderPanes();
     renderKeys();
