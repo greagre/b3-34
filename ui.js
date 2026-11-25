@@ -297,7 +297,7 @@
 
   /* код команды: цвет как у индикации, начертание моноширинное */
   function codeChip(s) {
-    return '<span style="font-family:ui-monospace,Menlo,Consolas,\'Courier New\',monospace">' +
+    return '<span style="color:#00a651;font-weight:600;font-family:ui-monospace,Menlo,Consolas,\'Courier New\',monospace">' +
       esc(s) + '</span>';
   }
 
