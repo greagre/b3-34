@@ -111,8 +111,9 @@
     <div class="shelf-tools">
       <button type="button" id="shelfSave">＋ Сохранить текущую</button>
       <button type="button" id="shelfExport">⇩ В файл</button>
+      <button type="button" id="shelfExportTxt">⇩ Текст</button>
       <button type="button" id="shelfImport">⇧ Из файла</button>
-      <input type="file" id="shelfFile" accept=".json,application/json" hidden>
+      <input type="file" id="shelfFile" accept=".json,.txt,application/json,text/plain" hidden>
     </div>
     <div class="shelf-list" id="shelfList"></div>
   </div>
@@ -152,7 +153,9 @@
 <script src="core.js"></script>
 <script src="profiles.js"></script>
 <script src="ui.js"></script>
+<script src="mklib.js"></script>
 <script src="shelf.js"></script>
+<script src="mklib-ui.js"></script>
 
 <script>
 /* Переключатель угла Р-ГРД-Г.
